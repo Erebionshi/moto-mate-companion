@@ -132,10 +132,10 @@ export function useBLE() {
     setConnectedAt(null);
   }
   function send(payload: object) {
-    setLog((l) => [{ ts: Date.now(), dir: "SENT", payload: JSON.stringify(payload) }, ...l].slice(0, 20));
+    setLog((l) => [{ ts: Date.now(), dir: "SENT" as const, payload: JSON.stringify(payload) }, ...l].slice(0, 20));
   }
   function recv(payload: object) {
-    setLog((l) => [{ ts: Date.now(), dir: "RECV", payload: JSON.stringify(payload) }, ...l].slice(0, 20));
+    setLog((l) => [{ ts: Date.now(), dir: "RECV" as const, payload: JSON.stringify(payload) }, ...l].slice(0, 20));
   }
   function clearLog() { setLog([]); }
 
