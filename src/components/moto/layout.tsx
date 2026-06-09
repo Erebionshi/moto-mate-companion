@@ -1,20 +1,20 @@
 import { type ReactNode } from "react";
-import { Gauge, Navigation, Bike, Bluetooth, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, Navigation, Bike, Bluetooth, User } from "lucide-react";
 
 export type TabKey = "dashboard" | "navigate" | "vehicle" | "iot" | "settings";
 
-export const TABS: { key: TabKey; label: string; icon: typeof Gauge }[] = [
-  { key: "dashboard", label: "Dashboard", icon: Gauge },
-  { key: "navigate", label: "Navigate", icon: Navigation },
+export const TABS: { key: TabKey; label: string; icon: typeof LayoutDashboard }[] = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "navigate", label: "Navigation", icon: Navigation },
   { key: "vehicle", label: "Vehicle", icon: Bike },
   { key: "iot", label: "Device", icon: Bluetooth },
-  { key: "settings", label: "Settings", icon: SettingsIcon },
+  { key: "settings", label: "Profile", icon: User },
 ];
 
 export function BottomNav({ active, onChange }: { active: TabKey; onChange: (k: TabKey) => void }) {
   return (
-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 border-t border-[#141414] bg-[#050505]/95 backdrop-blur">
-      <ul className="grid grid-cols-5">
+    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 border-t border-[#1f2937] bg-[#0B0F14]/95 backdrop-blur-xl">
+      <ul className="grid grid-cols-5 px-2 pb-2 pt-2">
         {TABS.map((t) => {
           const Icon = t.icon;
           const isActive = active === t.key;
@@ -22,14 +22,17 @@ export function BottomNav({ active, onChange }: { active: TabKey; onChange: (k: 
             <li key={t.key}>
               <button
                 onClick={() => onChange(t.key)}
-                className={`flex w-full flex-col items-center gap-1 py-3 transition-all duration-200 ${
-                  isActive ? "text-white" : "text-[#555555]"
+                className={`group flex w-full flex-col items-center gap-1 rounded-2xl py-2 transition-all duration-200 ${
+                  isActive ? "text-white" : "text-[#64748B] hover:text-[#94A3B8]"
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
-                <span className="font-display text-[10px] tracking-widest">{t.label.toUpperCase()}</span>
-                <span className={`h-0.5 w-6 rounded-full transition-all ${isActive ? "bg-white glow-white" : "bg-transparent"}`} />
+                <div className={`flex h-9 w-12 items-center justify-center rounded-xl transition-all duration-200 ${
+                  isActive ? "bg-[#3B82F6]/15 text-[#3B82F6]" : ""
+                }`}>
+                  <Icon size={20} strokeWidth={isActive ? 2.4 : 1.9} fill={isActive ? "currentColor" : "none"} fillOpacity={isActive ? 0.15 : 0} />
+                </div>
+                <span className={`text-[10px] font-medium tracking-wide ${isActive ? "text-white" : ""}`}>{t.label}</span>
               </button>
             </li>
           );
@@ -45,8 +48,8 @@ export function Screen({ children }: { children: ReactNode }) {
 
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <div className="mb-3 mt-6 flex items-end justify-between px-4">
-      <h2 className="font-display text-xs font-bold tracking-[0.2em] text-white">{children}</h2>
+    <div className="mb-3 mt-6 flex items-end justify-between px-5">
+      <h2 className="text-[15px] font-semibold tracking-tight text-white">{children}</h2>
       {right}
     </div>
   );
@@ -56,12 +59,7 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
   return <div className={`card-mn p-4 ${className}`}>{children}</div>;
 }
 
-export function StatusDot({ on }: { on: boolean }) {
-  return (
-    <span
-      className={`inline-block h-2 w-2 rounded-full ${
-        on ? "bg-white animate-ble-breath" : "bg-[#222]"
-      }`}
-    />
-  );
+export function StatusDot({ on, color = "success" }: { on: boolean; color?: "success" | "primary" | "danger" }) {
+  const c = on ? (color === "primary" ? "bg-[#3B82F6]" : color === "danger" ? "bg-[#EF4444]" : "bg-[#22C55E]") : "bg-[#334155]";
+  return <span className={`inline-block h-2 w-2 rounded-full ${c} ${on ? "animate-ble-breath" : ""}`} />;
 }
