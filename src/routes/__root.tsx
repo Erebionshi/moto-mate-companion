@@ -31,7 +31,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => { reportLovableError(error, { boundary: "root" }); }, [error]);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#030303] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#0B0F14] px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-display text-white">Something failed</h1>
         <button
