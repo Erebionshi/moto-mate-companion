@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BottomNav, Card, Screen, SectionTitle, type TabKey } from "@/components/moto/layout";
 import {
-  AlertBanner, QuickStats, RecentRidesList, RideScoreGauge, SpeedHero, TipCarousel, TopBar, WeatherCard,
+  AlertBanner, QuickActions, QuickStats, RecentRidesList, RideScoreGauge, SpeedHero, TipCarousel, TopBar, WeatherCard,
 } from "@/components/moto/dashboard-bits";
 import {
   ChecklistModal, NavigationView, SAMPLE_WAYPOINTS, SavedRoutesList,
