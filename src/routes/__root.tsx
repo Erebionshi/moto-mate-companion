@@ -15,7 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#030303] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#0B0F14] px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-display font-bold text-white">404</h1>
         <h2 className="mt-4 text-xl font-display text-white">Off route</h2>
