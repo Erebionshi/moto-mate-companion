@@ -142,31 +142,38 @@ function MotoNavApp() {
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#030303]">
+    <div className="mx-auto min-h-screen w-full max-w-[430px] bg-[#0B0F14]">
       {tab === "dashboard" && (
         <Screen>
           <TopBar bleConnected={ble.state === "CONNECTED"} vehicle={vehicle} />
-          <div className="space-y-3 px-4">
+          <div className="space-y-4 px-5">
             <SpeedHero speed={navActive ? 42 : 0} trip={lastRide} time="00:00" avg={navActive ? 38 : 0} />
-            <WeatherCard data={weather} onRefresh={weather.refresh} />
+            <QuickActions
+              onStartRide={() => startRide(0)}
+              onNavigateHome={() => { setDestination("Home"); setTab("navigate"); }}
+              onFindVehicle={() => toast.success("Locating vehicle…")}
+              onEmergency={() => setSosOpen(true)}
+            />
             <RideScoreGauge score={ride.score} issues={ride.issues} />
+            <WeatherCard data={weather} onRefresh={weather.refresh} />
           </div>
-          <QuickStats totalDistance={totalDistance} lastRide={lastRide} totalRides={store.rides.length} odometer={vehicle?.odometer ?? 0} />
           {alerts.length > 0 && (
             <>
-              <SectionTitle>ACTIVE ALERTS</SectionTitle>
+              <SectionTitle>Active Alerts</SectionTitle>
               {alerts.map((a) => (
                 <AlertBanner key={a.id} title={a.title} desc={a.desc} onDismiss={() => dismissAlert(a.id)} />
               ))}
             </>
           )}
-          <SectionTitle>RECENT RIDES</SectionTitle>
+          <SectionTitle>Ride Statistics</SectionTitle>
+          <QuickStats totalDistance={totalDistance} lastRide={lastRide} totalRides={store.rides.length} odometer={vehicle?.odometer ?? 0} />
+          <SectionTitle right={<button onClick={() => setTab("navigate")} className="text-xs font-medium text-[#3B82F6]">View all</button>}>Recent Rides</SectionTitle>
           <RecentRidesList rides={store.rides} onStart={() => startRide(0)} />
-          <SectionTitle>SAFETY</SectionTitle>
-          <div className="px-4"><TipCarousel /></div>
-          <div className="px-4 pt-6">
-            <button onClick={() => startRide(0)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-4 font-display font-bold text-black">
-              <Play size={18} /> START RIDE
+          <SectionTitle>Safety</SectionTitle>
+          <div className="px-5"><TipCarousel /></div>
+          <div className="px-5 pt-6">
+            <button onClick={() => startRide(0)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#3B82F6] py-4 text-sm font-semibold text-white shadow-lg shadow-[#3B82F6]/20 hover:bg-[#2563EB] active:scale-[0.99] transition">
+              <Play size={18} /> Start Ride
             </button>
           </div>
         </Screen>
