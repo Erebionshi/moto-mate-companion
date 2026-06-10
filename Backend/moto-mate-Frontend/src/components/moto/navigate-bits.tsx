@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, ArrowLeft, ArrowRight, CornerDownLeft, Check, X, Play, Pause, MapPin, AlertCircle, Share2 } from "lucide-react";
 import { Card, SectionTitle, StatusDot } from "./layout";
-import { MapWidget } from "./map-widget";
 import { CHECKLIST_ITEMS } from "@/lib/moto/data";
 import type { SavedRoute } from "@/lib/moto/types";
+
+// MapLibre GL driving-view map — client-only, heavy, so lazy-loaded
+const NavigationMap = lazy(() => import("./navigation-map"));
 
 const ARROWS: { sym: string; icon: typeof ArrowUp; key: "LEFT" | "RIGHT" | "STRAIGHT" | "UTURN" }[] = [
   { sym: "↑", icon: ArrowUp, key: "STRAIGHT" },
@@ -114,6 +116,9 @@ export function NavigationView({
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(0);
   const [stats, setStats] = useState({ distance: 0, time: 0, max: 0 });
+  // Live map bearing (reported by MapLibre) — keeps the compass rose accurate
+  // even when the user rotates the map manually
+  const [mapBearing, setMapBearing] = useState<number | null>(null);
 
   const prevGpsRef = useRef<[number, number] | null>(null);
   const prevGpsTimeRef = useRef<number>(Date.now());
@@ -240,52 +245,27 @@ export function NavigationView({
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[#0B0F14]">
 
-      {/* ── 3D perspective driving-view map ──────────────────────────────────
-           Key fix: NO overflow:hidden here — the perspective wrapper must be
-           transparent so the 3D-projected content (which extends above/below
-           the layout box) renders freely. NavigationView's own overflow-hidden
-           clips everything at the screen edge.
-
-           Inner div extends 80% above the viewport (top:-80%) so that after
-           rotateX(25deg) + perspective(700px), the projected top of the map
-           reaches the viewport top (math: with 25° tilt + 80% extension the
-           top projects to ~12% from viewport top, hidden behind the direction
-           card). Bottom stays pinned at viewport bottom via transformOrigin
-           at 100% (bottom center of inner div).                              */}
-      <div
-        className="absolute inset-0 z-0 bg-[#0d1117]"
-        style={{ perspective: "700px" }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: "-80%",
-            bottom: 0,
-            left: "-25%",
-            right: "-25%",
-            transform: `rotate(${-(userHeading ?? 0)}deg) rotateX(25deg)`,
-            transformOrigin: "50% 100%",
-            transition: "transform 0.3s linear",
-            willChange: "transform",
-          }}
-        >
-          <MapWidget
+      {/* ── MapLibre GL driving-view map ─────────────────────────────────────
+           Real 3D camera: pitch 60°, bearing follows the rider's heading
+           (heading-up like Google Maps), street-level zoom, puck pinned to
+           the lower third so most of the screen shows the road ahead.       */}
+      <div className="absolute inset-0 z-0 bg-[#0d1117]">
+        <Suspense fallback={<div className="h-full w-full bg-[#0d1117]" />}>
+          <NavigationMap
             userLocation={userLocation ?? null}
             destination={destination ?? null}
             routeGeometry={routeGeometry}
-            height="h-full"
-            className="rounded-none"
-            followUser
             heading={userHeading}
+            onBearingChange={setMapBearing}
           />
-        </div>
+        </Suspense>
 
-        {/* Depth-fade gradient — darkens the "horizon" to enhance distance perception */}
+        {/* Soft top fade so the direction card stays legible over the map */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
-            background: "linear-gradient(to bottom, rgba(10,14,19,0.55) 0%, transparent 30%)",
+            top: 0, left: 0, right: 0, height: "22%",
+            background: "linear-gradient(to bottom, rgba(10,14,19,0.55) 0%, transparent 100%)",
             pointerEvents: "none",
           }}
         />
@@ -298,7 +278,7 @@ export function NavigationView({
             viewBox="0 0 32 32"
             width="36"
             height="36"
-            style={{ transform: `rotate(${-(userHeading ?? 0)}deg)`, transformOrigin: "50% 50%", transition: "transform 0.3s linear" }}
+            style={{ transform: `rotate(${-(mapBearing ?? userHeading ?? 0)}deg)`, transformOrigin: "50% 50%", transition: "transform 0.3s linear" }}
           >
             {/* N — red */}
             <polygon points="16,4 14,15 16,13 18,15" fill="#ef4444" />
@@ -309,7 +289,7 @@ export function NavigationView({
           </svg>
         </div>
         <div className="mt-0.5 text-center font-display text-[8px] tracking-widest text-[#555]">
-          {compassLabel(userHeading ?? 0)}
+          {compassLabel(mapBearing ?? userHeading ?? 0)}
         </div>
       </div>
 
