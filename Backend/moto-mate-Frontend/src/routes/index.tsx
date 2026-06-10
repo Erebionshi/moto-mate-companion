@@ -186,8 +186,17 @@ function MotoNavApp() {
     }
   }
 
+  // iOS 13+ gates compass events behind a permission prompt that may only be
+  // triggered from a user gesture — call it from the START RIDE tap
+  function requestCompassPermission() {
+    if (typeof DeviceOrientationEvent === "undefined") return;
+    const D = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+    if (typeof D.requestPermission === "function") D.requestPermission().catch(() => {});
+  }
+
   function startRide(distance = 0) {
     if (!vehicle) { toast.error("Add a vehicle first"); setTab("vehicle"); return; }
+    requestCompassPermission();
     const dist = routeInfo ? parseFloat(routeInfo.distance) : distance;
     if (dist > store.settings.longRideThreshold && store.settings.checklistReminder) {
       setPendingDistance(dist);

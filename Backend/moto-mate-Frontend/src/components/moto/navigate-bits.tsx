@@ -83,6 +83,35 @@ function haversineM([lat1, lon1]: [number, number], [lat2, lon2]: [number, numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Walk `advanceM` metres along a [lat, lng] polyline from the given progress
+// (segment index + metres into that segment); mutates `prog`, returns the point.
+function advanceAlongRoute(
+  geometry: [number, number][],
+  prog: { idx: number; offset: number },
+  advanceM: number
+): [number, number] {
+  let idx = prog.idx;
+  let remaining = prog.offset + advanceM;
+  while (idx < geometry.length - 1) {
+    const segLen = haversineM(geometry[idx], geometry[idx + 1]);
+    if (remaining < segLen) break;
+    remaining -= segLen;
+    idx++;
+  }
+  if (idx >= geometry.length - 1) {
+    prog.idx = geometry.length - 1;
+    prog.offset = 0;
+    return geometry[geometry.length - 1];
+  }
+  prog.idx = idx;
+  prog.offset = remaining;
+  const [aLat, aLng] = geometry[idx];
+  const [bLat, bLng] = geometry[idx + 1];
+  const segLen = haversineM(geometry[idx], geometry[idx + 1]);
+  const t = segLen > 0 ? remaining / segLen : 0;
+  return [aLat + (bLat - aLat) * t, aLng + (bLng - aLng) * t];
+}
+
 function compassLabel(deg: number): string {
   const dirs = ["N","NE","E","SE","S","SW","W","NW"];
   return dirs[Math.round(((deg % 360) + 360) % 360 / 45) % 8];
@@ -123,6 +152,13 @@ export function NavigationView({
   const prevGpsRef = useRef<[number, number] | null>(null);
   const prevGpsTimeRef = useRef<number>(Date.now());
   const hasGps = !!userLocation;
+
+  // Simulated drive (no real GPS) — moves the puck along the route geometry
+  // so the map animates turns even on desktop web with no sensors at all
+  const [simLocation, setSimLocation] = useState<[number, number] | null>(() =>
+    !userLocation && routeGeometry && routeGeometry.length > 0 ? routeGeometry[0] : null
+  );
+  const simProgRef = useRef({ idx: 0, offset: 0 });
 
   const current = waypoints[idx] ?? waypoints[waypoints.length - 1];
   const arrowInfo = ARROWS.find((a) => a.key === current.arrow)!;
@@ -178,6 +214,11 @@ export function NavigationView({
       simSpeed.current = Math.max(20, Math.min(90, simSpeed.current + (Math.random() - 0.5) * 6));
       setSpeed(simSpeed.current);
 
+      // Drive the puck along the actual route so the map animates turns
+      if (routeGeometry && routeGeometry.length > 1) {
+        setSimLocation(advanceAlongRoute(routeGeometry, simProgRef.current, simSpeed.current / 3.6));
+      }
+
       setRemaining((r) => {
         const dec = Math.max(20, Math.round(simSpeed.current * 1000 / 3600));
         const next = r - dec;
@@ -195,7 +236,7 @@ export function NavigationView({
     }, 1000);
     return () => clearInterval(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, hasGps, waypoints]);
+  }, [playing, hasGps, waypoints, routeGeometry]);
 
   useEffect(() => {
     if (bleConnected) sendBle({ arrow: current.arrow, dist: `${remaining}m` });
@@ -252,7 +293,7 @@ export function NavigationView({
       <div className="absolute inset-0 z-0 bg-[#0d1117]">
         <Suspense fallback={<div className="h-full w-full bg-[#0d1117]" />}>
           <NavigationMap
-            userLocation={userLocation ?? null}
+            userLocation={userLocation ?? simLocation}
             destination={destination ?? null}
             routeGeometry={routeGeometry}
             heading={userHeading}

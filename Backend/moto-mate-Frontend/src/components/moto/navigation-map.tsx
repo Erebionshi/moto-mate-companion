@@ -58,6 +58,22 @@ function distM(a: [number, number], b: [number, number]): number {
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
+// Bearing of the route segment nearest to loc — lets the camera turn at
+// corners even with no compass/GPS heading (desktop web has neither).
+// Returns null when off-route (> 60 m) so we don't snap to a wrong road.
+function routeBearingNear(route: [number, number][] | undefined, loc: [number, number]): number | null {
+  if (!route || route.length < 2) return null;
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < route.length; i++) {
+    const d = distM(route[i], loc);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  if (bestD > 60) return null;
+  const i = Math.min(best, route.length - 2);
+  if (distM(route[i], route[i + 1]) < 1) return null; // degenerate segment
+  return bearingBetween(route[i], route[i + 1]);
+}
+
 function makePuckElement(): HTMLDivElement {
   const el = document.createElement("div");
   el.innerHTML = `
@@ -226,11 +242,13 @@ export default function NavigationMap({ userLocation, destination, routeGeometry
     const map = mapRef.current;
     if (!map || !userLocation) return;
 
-    // Heading priority: device heading → bearing of actual movement → last known
+    // Heading priority: device heading → bearing of actual movement →
+    // bearing of the nearest route segment → last known
     let hdg = heading;
     if (hdg == null && prevLocRef.current && distM(prevLocRef.current, userLocation) > 4) {
       hdg = bearingBetween(prevLocRef.current, userLocation);
     }
+    if (hdg == null) hdg = routeBearingNear(routeRef.current, userLocation);
     if (hdg != null) lastBearingRef.current = hdg;
     prevLocRef.current = userLocation;
 
